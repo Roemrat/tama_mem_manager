@@ -1,0 +1,20 @@
+App(
+	appid="tama_mem_manager",
+	name="Tama Mem Manager",
+	apptype=FlipperAppType.EXTERNAL,
+	entry_point="tama_mem_app",
+	fap_category="GPIO",
+	fap_icon="images/Dip8_10px.png",
+	requires=[
+		"gui",
+	],
+	fap_version=(1, 4),
+	fap_description="Application for reading and writing 25-series tama memory chips",
+	fap_icon_assets="images",
+	fap_private_libs=[
+		Lib(
+		  name="spi"
+		),
+	],
+)
+
