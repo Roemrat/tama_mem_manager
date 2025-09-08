@@ -1,13 +1,11 @@
 ﻿#include "../tama_mem_app_i.h"
 
 typedef enum {
-    SPIMemSceneStartSubmenuIndexRead,
     SPIMemSceneStartSubmenuIndexSaved,
-    SPIMemSceneStartSubmenuIndexErase,
-    SPIMemSceneStartSubmenuIndexWiring,
-    SPIMemSceneStartSubmenuIndexProtect,
     SPIMemSceneStartSubmenuIndexTama,
-    SPIMemSceneStartSubmenuIndexAbout
+    SPIMemSceneStartSubmenuIndexProtect,
+    SPIMemSceneStartSubmenuIndexRead,
+    SPIMemSceneStartSubmenuIndexErase
 } SPIMemSceneStartSubmenuIndex;
 
 static void tama_mem_scene_start_submenu_callback(void* context, uint32_t index) {
@@ -90,12 +88,12 @@ bool tama_mem_scene_start_on_event(void* context, SceneManagerEvent event) {
             app->mode = SPIMemModeTama;
             scene_manager_next_scene(app->scene_manager, SPIMemSceneChipDetect);
             success = true;
-        } else if(event.event == SPIMemSceneStartSubmenuIndexWiring) {
-            scene_manager_next_scene(app->scene_manager, SPIMemSceneWiring);
-            success = true;
-        } else if(event.event == SPIMemSceneStartSubmenuIndexAbout) {
-            scene_manager_next_scene(app->scene_manager, SPIMemSceneAbout);
-            success = true;
+        // } else if(event.event == SPIMemSceneStartSubmenuIndexWiring) {
+        //     scene_manager_next_scene(app->scene_manager, SPIMemSceneWiring);
+        //     success = true;
+        // } else if(event.event == SPIMemSceneStartSubmenuIndexAbout) {
+        //     scene_manager_next_scene(app->scene_manager, SPIMemSceneAbout);
+        //     success = true;
         }
     }
     return success;
