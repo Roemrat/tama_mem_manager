@@ -79,6 +79,7 @@ typedef enum {
     SPIMemCustomEventViewReadCancel,
     SPIMemCustomEventViewVerifySkip,
     SPIMemCustomEventTextEditResult,
-    SPIMemCustomEventPopupBack
+    SPIMemCustomEventPopupBack,
+    SPIMemCustomEventSuccessOk
 } SPIMemCustomEvent;
 

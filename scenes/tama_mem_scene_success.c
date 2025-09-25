@@ -1,8 +1,14 @@
 ﻿#include "../tama_mem_app_i.h"
 
-static void tama_mem_scene_success_popup_callback(void* context) {
+static void tama_mem_scene_success_widget_callback(
+    GuiButtonType result,
+    InputType type,
+    void* context) {
     SPIMemApp* app = context;
-    view_dispatcher_send_custom_event(app->view_dispatcher, SPIMemCustomEventPopupBack);
+    UNUSED(result);
+    if(type == InputTypeShort) {
+        view_dispatcher_send_custom_event(app->view_dispatcher, SPIMemCustomEventSuccessOk);
+    }
 }
 
 static void tama_mem_scene_success_vibro_timer_callback(void* context) {
@@ -26,29 +32,30 @@ void tama_mem_scene_success_on_enter(void* context) {
     app->vibro_timer = furi_timer_alloc(tama_mem_scene_success_vibro_timer_callback, FuriTimerTypeOnce, app);
     furi_timer_start(app->vibro_timer, 200);
     
-    popup_set_icon(app->popup, 32, 5, &I_DolphinNice_96x59);
-    popup_set_header(app->popup, "Success!", 5, 7, AlignLeft, AlignTop);
-    popup_set_callback(app->popup, tama_mem_scene_success_popup_callback);
-    popup_set_context(app->popup, app);
-    popup_set_timeout(app->popup, 2000);
-    popup_enable_timeout(app->popup);
-    view_dispatcher_switch_to_view(app->view_dispatcher, SPIMemViewPopup);
-}
-
-static void tama_mem_scene_success_set_previous_scene(SPIMemApp* app) {
-    uint32_t scene = SPIMemSceneSelectFile;
-    if(app->mode == SPIMemModeErase) scene = SPIMemSceneStart;
-    if(app->mode == SPIMemModeProtect || app->mode == SPIMemModeTama) scene = SPIMemSceneStart;
-    scene_manager_search_and_switch_to_another_scene(app->scene_manager, scene);
+    // Use widget instead of popup to show OK button clearly
+    widget_add_icon_element(app->widget, 16, 5, &I_DolphinNice_96x59);
+    widget_add_string_element(app->widget, 5, 7, AlignLeft, AlignTop, FontPrimary, "Success!");
+    widget_add_button_element(
+        app->widget,
+        GuiButtonTypeCenter,
+        "OK",
+        tama_mem_scene_success_widget_callback,
+        app);
+    view_dispatcher_switch_to_view(app->view_dispatcher, SPIMemViewWidget);
 }
 
 bool tama_mem_scene_success_on_event(void* context, SceneManagerEvent event) {
     SPIMemApp* app = context;
     bool success = false;
-    if(event.type == SceneManagerEventTypeCustom) {
+    if(event.type == SceneManagerEventTypeBack) {
         success = true;
-        if(event.event == SPIMemCustomEventPopupBack) {
-            tama_mem_scene_success_set_previous_scene(app);
+        // Go back to start scene when back button is pressed
+        scene_manager_search_and_switch_to_another_scene(app->scene_manager, SPIMemSceneStart);
+    } else if(event.type == SceneManagerEventTypeCustom) {
+        success = true;
+        if(event.event == SPIMemCustomEventSuccessOk) {
+            // Always go back to start scene when OK is pressed
+            scene_manager_search_and_switch_to_another_scene(app->scene_manager, SPIMemSceneStart);
         }
     }
     return success;
@@ -57,6 +64,6 @@ bool tama_mem_scene_success_on_event(void* context, SceneManagerEvent event) {
 void tama_mem_scene_success_on_exit(void* context) {
     SPIMemApp* app = context;
     notification_message(app->notifications, &sequence_blink_stop);
-    popup_reset(app->popup);
+    widget_reset(app->widget);
 }
 
