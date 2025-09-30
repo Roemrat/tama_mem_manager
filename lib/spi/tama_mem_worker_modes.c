@@ -26,7 +26,7 @@ static void tama_mem_worker_run_callback(SPIMemWorker* worker, SPIMemCustomEvent
 
 static bool tama_mem_worker_await_chip_busy(SPIMemWorker* worker) {
     while(true) {
-        furi_delay_tick(10); // to give some time to OS
+        furi_delay_tick(5); // to give some time to OS
         if(tama_mem_worker_check_for_stop(worker)) return true;
         SPIMemChipStatus chip_status = tama_mem_tools_get_chip_status(worker->chip_info);
         if(chip_status == SPIMemChipStatusError) return false;
@@ -178,7 +178,7 @@ static bool
     size_t page_size = tama_mem_chip_get_page_size(worker->chip_info);
     size_t offset = 0;
     while(true) {
-        furi_delay_tick(10); // to give some time to OS
+        furi_delay_tick(5); // to give some time to OS
         size_t block_size = tama_mem_FILE_BUFFER_SIZE;
         if(tama_mem_worker_check_for_stop(worker)) break;
         if(offset >= total_size) break;
@@ -207,9 +207,12 @@ static void tama_mem_worker_write_process(SPIMemWorker* worker) {
         if(!tama_mem_file_open(worker->cb_ctx)) break;
         if(!tama_mem_worker_await_chip_busy(worker)) break;
         if(!tama_mem_protection_unlock(worker->chip_info)) break;
+        if(!tama_mem_worker_await_chip_busy(worker)) break;
         if(!tama_mem_tools_erase_chip(worker->chip_info)) break;
         if(!tama_mem_worker_await_chip_busy(worker)) break;
         if(!tama_mem_worker_write(worker, total_size, &event)) break;
+        if(!tama_mem_worker_await_chip_busy(worker)) break;
+        if(!tama_mem_protection_lock(worker->chip_info)) break;
         if(!tama_mem_worker_await_chip_busy(worker)) break;
         event = SPIMemCustomEventWorkerDone;
     } while(0);

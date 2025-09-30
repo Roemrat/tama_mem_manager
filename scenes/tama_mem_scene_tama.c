@@ -110,6 +110,52 @@ bool tama_mem_scene_tama_on_event(void* context, SceneManagerEvent event) {
         if(event.event == GuiButtonTypeLeft) {
             scene_manager_previous_scene(app->scene_manager);
         } else if(event.event == GuiButtonTypeRight) {
+            // Validation check: Verify bytes at address 0x10-0x20 match expected sequence
+            const uint8_t expected_bytes[] = {
+                0x42, 0x41, 0x4E, 0x44, 0x41, 0x49, 0x4E, 0x54, 0x50, 0x44, 0x5F, 0x30, 0x5F, 0x30, 0x5F, 0x30,
+                0x54, 0x41, 0x4D, 0x41, 0x53, 0x55, 0x4D, 0x41, 0x5F, 0x54, 0x49, 0x4D, 0x30, 0x30, 0x30, 0x30
+            };
+            const uint32_t validation_addr = 0x000010;
+            const size_t validation_size = sizeof(expected_bytes);
+            uint8_t validation_data[validation_size];
+            bool validation_ok = false;
+            
+            tama_mem_protection_unlock(app->chip_info);
+            furi_hal_spi_acquire(&furi_hal_spi_bus_handle_external);
+            do {
+                uint8_t cmd = (uint8_t)SPIMemChipCMDReadData;
+                uint8_t addr_bytes[3];
+                addr_bytes[0] = (validation_addr >> 16) & 0xFF;
+                addr_bytes[1] = (validation_addr >> 8) & 0xFF;
+                addr_bytes[2] = validation_addr & 0xFF;
+                furi_hal_gpio_write(&gpio_ext_pa4, false);
+                if(!furi_hal_spi_bus_tx(&furi_hal_spi_bus_handle_external, &cmd, 1, tama_mem_SPI_TIMEOUT)) break;
+                if(!furi_hal_spi_bus_tx(&furi_hal_spi_bus_handle_external, addr_bytes, 3, tama_mem_SPI_TIMEOUT)) break;
+                if(!furi_hal_spi_bus_rx(&furi_hal_spi_bus_handle_external, validation_data, validation_size, tama_mem_SPI_TIMEOUT)) break;
+                validation_ok = true;
+            } while(0);
+            furi_hal_gpio_write(&gpio_ext_pa4, true);
+            furi_hal_spi_release(&furi_hal_spi_bus_handle_external);
+            
+            if(!validation_ok) {
+                scene_manager_next_scene(app->scene_manager, SPIMemSceneChipError);
+                return true;
+            }
+            
+            // Check if validation data matches expected sequence
+            bool sequence_match = true;
+            for(size_t i = 0; i < validation_size; i++) {
+                if(validation_data[i] != expected_bytes[i]) {
+                    sequence_match = false;
+                    break;
+                }
+            }
+            
+            if(!sequence_match) {
+                scene_manager_next_scene(app->scene_manager, SPIMemSceneChipError);
+                return true;
+            }
+            
             // 1) Read first sector (4KB) into header
             const uint32_t sector_addr = 0x000000;
             const size_t sector_size = 0x40; // read/write only first 64 bytes to avoid freezes

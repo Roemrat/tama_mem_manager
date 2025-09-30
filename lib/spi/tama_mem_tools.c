@@ -1,4 +1,4 @@
-﻿#include <furi_hal.h>
+#include <furi_hal.h>
 #include <furi_hal_spi_config.h>
 #include "tama_mem_chip_i.h"
 #include "tama_mem_tools.h"
@@ -142,7 +142,7 @@ bool tama_mem_tools_erase_chip(SPIMemChip* chip) {
 
 bool tama_mem_tools_write_bytes(SPIMemChip* chip, size_t offset, uint8_t* data, size_t block_size) {
     do {
-        if(!tama_mem_tools_check_chip_info(chip)) break;
+        // chip identity is already validated during detection; skip per-page check for speed
         if(!tama_mem_tools_set_write_enabled(chip, true)) break;
         if((offset + block_size) > chip->size) break;
         if(!tama_mem_tools_write_buffer(data, block_size, offset)) break;

@@ -20,7 +20,7 @@ static void tama_mem_scene_success_vibro_timer_callback(void* context) {
 void tama_mem_scene_success_on_enter(void* context) {
     SPIMemApp* app = context;
     notification_message(app->notifications, &sequence_display_backlight_on);
-    notification_message(app->notifications, &sequence_blink_start_blue);
+    notification_message(app->notifications, &sequence_blink_stop);
     
     // Turn on vibration
     notification_message(app->notifications, &sequence_set_vibro_on);
@@ -63,7 +63,6 @@ bool tama_mem_scene_success_on_event(void* context, SceneManagerEvent event) {
 
 void tama_mem_scene_success_on_exit(void* context) {
     SPIMemApp* app = context;
-    notification_message(app->notifications, &sequence_blink_stop);
     widget_reset(app->widget);
 }
 
