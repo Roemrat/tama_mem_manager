@@ -1,5 +1,4 @@
 #include <furi_hal.h>
-#include <furi_hal_spi_config.h>
 #include "tama_mem_chip_i.h"
 #include "tama_mem_tools.h"
 
@@ -85,7 +84,7 @@ bool tama_mem_tools_check_chip_info(SPIMemChip* chip) {
 }
 
 bool tama_mem_tools_read_block(SPIMemChip* chip, size_t offset, uint8_t* data, size_t block_size) {
-    if(!tama_mem_tools_check_chip_info(chip)) return false;
+    // Skip chip info check for speed - already validated during detection
     for(size_t i = 0; i < block_size; i += tama_mem_MAX_BLOCK_SIZE) {
         uint8_t cmd[4];
         if((offset + tama_mem_MAX_BLOCK_SIZE) > chip->size) return false;

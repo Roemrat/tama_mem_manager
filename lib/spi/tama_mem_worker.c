@@ -22,7 +22,7 @@ SPIMemWorker* tama_mem_worker_alloc() {
     furi_thread_set_name(worker->thread, "SPIMemWorker");
     furi_thread_set_callback(worker->thread, tama_mem_worker_thread);
     furi_thread_set_context(worker->thread, worker);
-    furi_thread_set_stack_size(worker->thread, 10240);
+    furi_thread_set_stack_size(worker->thread, 20480);
     return worker;
 }
 

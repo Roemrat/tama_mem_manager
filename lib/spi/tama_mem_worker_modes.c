@@ -25,12 +25,23 @@ static void tama_mem_worker_run_callback(SPIMemWorker* worker, SPIMemCustomEvent
 }
 
 static bool tama_mem_worker_await_chip_busy(SPIMemWorker* worker) {
+    uint32_t retry_count = 0;
     while(true) {
-        furi_delay_tick(5); // to give some time to OS
         if(tama_mem_worker_check_for_stop(worker)) return true;
         SPIMemChipStatus chip_status = tama_mem_tools_get_chip_status(worker->chip_info);
         if(chip_status == SPIMemChipStatusError) return false;
-        if(chip_status == SPIMemChipStatusBusy) continue;
+        if(chip_status == SPIMemChipStatusBusy) {
+            // Exponential backoff: delay increases with retry count, but cap at reasonable value
+            if(retry_count < 10) {
+                // No delay for first few checks (chip is usually ready quickly)
+            } else if(retry_count < 50) {
+                furi_delay_tick(1);
+            } else {
+                furi_delay_tick(2);
+            }
+            retry_count++;
+            continue;
+        }
         return true;
     }
 }
@@ -65,7 +76,7 @@ static bool tama_mem_worker_read(SPIMemWorker* worker, SPIMemCustomEventWorker* 
     size_t offset = 0;
     bool success = true;
     while(true) {
-        furi_delay_tick(10); // to give some time to OS
+        // Removed delay - SD card I/O is the bottleneck, not CPU
         size_t block_size = tama_mem_FILE_BUFFER_SIZE;
         if(tama_mem_worker_check_for_stop(worker)) break;
         if(offset >= chip_size) break;
@@ -80,6 +91,7 @@ static bool tama_mem_worker_read(SPIMemWorker* worker, SPIMemCustomEventWorker* 
             break;
         }
         offset += block_size;
+        // Call callback every block for accurate progress bar
         tama_mem_worker_run_callback(worker, SPIMemCustomEventWorkerBlockReaded);
     }
     if(success) *event = SPIMemCustomEventWorkerDone;
@@ -89,7 +101,7 @@ static bool tama_mem_worker_read(SPIMemWorker* worker, SPIMemCustomEventWorker* 
 static void tama_mem_worker_read_process(SPIMemWorker* worker) {
     SPIMemCustomEventWorker event = SPIMemCustomEventWorkerFileFail;
     do {
-        if(!tama_mem_worker_await_chip_busy(worker)) break;
+        // Read doesn't need to wait for chip busy - it's a read operation
         if(!tama_mem_file_create_open(worker->cb_ctx)) break;
         if(!tama_mem_worker_read(worker, &event)) break;
     } while(0);
@@ -105,7 +117,7 @@ static bool
     size_t offset = 0;
     bool success = true;
     while(true) {
-        furi_delay_tick(10); // to give some time to OS
+        // Removed delay - SD card I/O is the bottleneck, not CPU
         size_t block_size = tama_mem_FILE_BUFFER_SIZE;
         if(tama_mem_worker_check_for_stop(worker)) break;
         if(offset >= total_size) break;
@@ -125,6 +137,7 @@ static bool
             break;
         }
         offset += block_size;
+        // Call callback every block for accurate progress bar
         tama_mem_worker_run_callback(worker, SPIMemCustomEventWorkerBlockReaded);
     }
     if(success) *event = SPIMemCustomEventWorkerDone;
@@ -135,7 +148,7 @@ static void tama_mem_worker_verify_process(SPIMemWorker* worker) {
     SPIMemCustomEventWorker event = SPIMemCustomEventWorkerFileFail;
     size_t total_size = tama_mem_worker_modes_get_total_size(worker);
     do {
-        if(!tama_mem_worker_await_chip_busy(worker)) break;
+        // Verify doesn't need to wait for chip busy - it's a read operation
         if(!tama_mem_file_open(worker->cb_ctx)) break;
         if(!tama_mem_worker_verify(worker, total_size, &event)) break;
     } while(0);
@@ -178,7 +191,7 @@ static bool
     size_t page_size = tama_mem_chip_get_page_size(worker->chip_info);
     size_t offset = 0;
     while(true) {
-        furi_delay_tick(5); // to give some time to OS
+        // Removed delay - SD card I/O is the bottleneck, not CPU
         size_t block_size = tama_mem_FILE_BUFFER_SIZE;
         if(tama_mem_worker_check_for_stop(worker)) break;
         if(offset >= total_size) break;
@@ -194,6 +207,7 @@ static bool
             break;
         }
         offset += block_size;
+        // Call callback every block for accurate progress bar
         tama_mem_worker_run_callback(worker, SPIMemCustomEventWorkerBlockReaded);
     }
     return success;
